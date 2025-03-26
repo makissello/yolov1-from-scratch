@@ -113,13 +113,9 @@ class YOLO_Face_Detector:
         print("Starting forward prop layer 5: ")
 
         # Conv layer 5 + ReLU + MaxPool
-        print(f"A4 shape: {A4.shape}")
         Z5, cache = self.conv_forward(A4, self.parameters["W5"], self.parameters["b5"], stride=1, pad=1)
-        print(f"Z5 shape: {Z5.shape}")
         A5, cache_relu5 = self.relu_forward(Z5)
-        print(f"A5 before pooling shape: {A5.shape}")
         A5, cache_pool5 = self.maxpool_forward(A5, pool_size=2, stride=2)
-        print(f"A5 after pooling shape: {A5.shape}")
         caches.append((cache, cache_relu5, cache_pool5))
 
         print("Starting forward prop FC layer 1: ")
@@ -661,28 +657,21 @@ class YOLO_Face_Detector:
         # Reshape dY_pred to match the original output shape from the network
         dY_pred_reshaped = dY_pred.reshape(m, -1)
 
+        print("Starting backprop for FC layer 2...")
+
         # Backpropagate through the network
         # FC layer 2 (output layer)
         cache = caches[-1][0]
         dA6, gradients["dW7"], gradients["db7"] = self.fc_backward(dY_pred_reshaped, cache)
+
+        print("Starting backprop for FC layer 1...")
 
         # FC layer 1 + ReLU
         cache, cache_relu6 = caches[-2]
         dZ6 = self.relu_backward(dA6, cache_relu6)
         dA5, gradients["dW6"], gradients["db6"] = self.fc_backward(dZ6, cache)
 
-
-        # Reshape dY_pred to match the original output shape from the network
-        dY_pred_reshaped = dY_pred.reshape(m, -1)
-
-        # Get the expected shape from the cache
-        expected_shape = caches[-3][0][0].shape  # A_prev from the cache
-
-        # Print shapes for debugging
-        print(f"dA5 shape: {dA5.shape}")
-        print(f"Expected shape from cache: {expected_shape}")
-
-        input("wait...")
+        print("Starting backprop for Conv layer 5...")
 
         # Conv layer 5 + ReLU + MaxPool
         cache, cache_relu5, cache_pool5 = caches[-3]
@@ -690,7 +679,7 @@ class YOLO_Face_Detector:
         dZ5 = self.relu_backward(dA5, cache_relu5)
         dA4, gradients["dW5"], gradients["db5"] = self.conv_backward(dZ5, cache)
 
-        print("wait again...")
+        print("Starting backprop for Conv layer 4...")
 
         # Conv layer 4 + ReLU + MaxPool
         cache, cache_relu4, cache_pool4 = caches[-4]
@@ -698,17 +687,23 @@ class YOLO_Face_Detector:
         dZ4 = self.relu_backward(dA4, cache_relu4)
         dA3, gradients["dW4"], gradients["db4"] = self.conv_backward(dZ4, cache)
 
+        print("Starting backprop for Conv layer 3...")
+
         # Conv layer 3 + ReLU + MaxPool
         cache, cache_relu3, cache_pool3 = caches[-5]
         dA3 = self.maxpool_backward(dA3, cache_pool3)
         dZ3 = self.relu_backward(dA3, cache_relu3)
         dA2, gradients["dW3"], gradients["db3"] = self.conv_backward(dZ3, cache)
 
+        print("Starting backprop for Conv layer 2...")
+
         # Conv layer 2 + ReLU + MaxPool
         cache, cache_relu2, cache_pool2 = caches[-6]
         dA2 = self.maxpool_backward(dA2, cache_pool2)
         dZ2 = self.relu_backward(dA2, cache_relu2)
         dA1, gradients["dW2"], gradients["db2"] = self.conv_backward(dZ2, cache)
+
+        print("Starting backprop for Conv layer 1...")
 
         # Conv layer 1 + ReLU + MaxPool
         cache, cache_relu1, cache_pool1 = caches[-7]
@@ -991,8 +986,8 @@ class YOLO_Face_Detector:
         return costs
 
 # Dummy dataset for testing
-X_train = np.random.randn(20, 448, 448, 3)  # 100 images, each 416x416x3
-Y_train = np.random.randn(20, 7, 7, 11)  # 100 ground truth outputs for YOLO (13x13 grid, 2 boxes, 5 for each box, and 10 classes)
+X_train = np.random.randn(20, 448, 448, 3)  # 20 images, each 448x448x3
+Y_train = np.random.randn(20, 7, 7, 11)  # 20 ground truth outputs for YOLO (7x7 grid, 2 boxes, 5 for each box, and 1 class)
 
 # Initialize and train the YOLO model
 yolo = YOLO_Face_Detector()
